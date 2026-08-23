@@ -169,6 +169,7 @@
         <div>
           <label for="provider">Model</label>
           <select id="provider">
+            <option value="gemini">Google · Gemini (free key)</option>
             <option value="openai">OpenAI · GPT</option>
             <option value="anthropic">Anthropic · Claude</option>
           </select>
@@ -182,7 +183,9 @@
       <p class="hint">
         <strong>Your key never leaves your browser.</strong> It is kept in localStorage on this
         device and sent only to the provider you pick. No server sits in between — this page is
-        static.
+        static. Gemini keys are free from
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>
+        — no card required.
       </p>
 
       <button class="go" id="go">Generate the spec</button>
@@ -225,9 +228,13 @@
     v ? localStorage.setItem(KEY_STORE + provEl.value, v)
       : localStorage.removeItem(KEY_STORE + provEl.value);
   };
-  provEl.addEventListener("change", loadKey);
+  const PLACEHOLDER = { gemini: "AIza…", openai: "sk-…", anthropic: "sk-ant-…" };
+  const syncPlaceholder = () => { keyEl.placeholder = PLACEHOLDER[provEl.value] || "API key"; };
+
+  provEl.addEventListener("change", () => { loadKey(); syncPlaceholder(); });
   keyEl.addEventListener("change", saveKey);
   loadKey();
+  syncPlaceholder();
 
   const SYSTEM = [
     "You are a product lead who has shipped many small products.",
@@ -299,12 +306,25 @@
 
   // --- 两家的 SSE 格式不同，但都是 data: 行，差别在 payload 结构 ---
   function deltaFrom(provider, payload) {
-    if (provider === "openai") return payload.choices?.[0]?.delta?.content || "";
+    // Gemini 的 OpenAI 兼容端点返回同样形状的 chunk，共用一条分支
+    if (provider === "openai" || provider === "gemini")
+      return payload.choices?.[0]?.delta?.content || "";
     if (payload.type === "content_block_delta") return payload.delta?.text || "";
     return "";
   }
 
   function requestFor(provider, key, idea) {
+    if (provider === "gemini") {
+      return {
+        url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+        body: {
+          model: "gemini-2.0-flash", stream: true, max_tokens: 1200,
+          messages: [{ role: "system", content: SYSTEM }, { role: "user", content: idea }]
+        },
+        label: "gemini-2.0-flash"
+      };
+    }
     if (provider === "openai") {
       return {
         url: "https://api.openai.com/v1/chat/completions",
@@ -339,7 +359,8 @@
     const provider = provEl.value;
 
     if (idea.length < 20) return fail("Describe the idea in a bit more detail — a sentence or two at minimum.");
-    if (!key) return fail("Add an API key for " + (provider === "openai" ? "OpenAI" : "Anthropic") + ". It stays in this browser.");
+    const NAMES = { gemini: "Google AI Studio", openai: "OpenAI", anthropic: "Anthropic" };
+    if (!key) return fail("Add an API key for " + NAMES[provider] + ". It stays in this browser.");
 
     saveKey();
     goEl.disabled = true;
