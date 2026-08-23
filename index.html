@@ -85,6 +85,16 @@
   .row{display:flex; gap:.75rem; margin-top:1rem}
   .row>div{flex:1; min-width:0}
 
+  textarea::placeholder{color:var(--muted); opacity:.55}
+  .example{
+    display:inline-flex; align-items:center; gap:.35rem; margin-top:.5rem;
+    font-family:var(--sans); font-size:.78rem; font-weight:500;
+    color:var(--accent-ink); background:transparent; border:0; padding:0; cursor:pointer;
+  }
+  .example:hover{text-decoration:underline}
+  .example:focus-visible{outline:2px solid var(--accent-ink); outline-offset:3px; border-radius:2px}
+  textarea.nudge{border-color:var(--warn); box-shadow:0 0 0 3px var(--warn-soft)}
+
   .hint{font-size:.76rem; color:var(--muted); margin:.45rem 0 0; line-height:1.5}
   .hint strong{color:var(--ink-2); font-weight:500}
 
@@ -163,7 +173,8 @@
       <h2>Your idea</h2>
 
       <label for="idea">Describe it in a few sentences</label>
-      <textarea id="idea" placeholder="A tool that lets freelance designers send a client a link where the client can leave feedback directly on the design, without signing up."></textarea>
+      <textarea id="idea" placeholder="Type your idea here — or use the example below."></textarea>
+      <button type="button" class="example" id="example">↳ Fill in an example idea</button>
 
       <div class="row">
         <div>
@@ -402,7 +413,13 @@
     const key = keyEl.value.trim();
     const provider = provEl.value;
 
-    if (idea.length < 20) return fail("Describe the idea in a bit more detail — a sentence or two at minimum.");
+    if (idea.length < 20) {
+      // 空输入是最常见的失败，别只在右栏报错——把人带回该填的地方
+      ideaEl.classList.add("nudge");
+      ideaEl.focus();
+      return fail("The idea box is empty. Type an idea, or hit \u201cFill in an example idea\u201d below it.");
+    }
+    ideaEl.classList.remove("nudge");
     const NAMES = { gemini: "Google AI Studio", openai: "OpenAI", anthropic: "Anthropic", deepseek: "DeepSeek" };
     if (!key) return fail("Add an API key for " + NAMES[provider] + ". It stays in this browser.");
 
@@ -471,6 +488,16 @@
       goEl.textContent = "Generate the spec";
     }
   }
+
+  const EXAMPLE = "A tool where a founder pastes their landing page URL and gets back the "
+    + "three most confusing things a first-time visitor would hit, ranked by how likely "
+    + "they are to cause a bounce.";
+
+  document.getElementById("example").addEventListener("click", () => {
+    ideaEl.value = EXAMPLE;
+    ideaEl.classList.remove("nudge");
+    ideaEl.focus();
+  });
 
   goEl.addEventListener("click", generate);
   ideaEl.addEventListener("keydown", e => {
