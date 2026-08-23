@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idea → MVP Spec</title>
+<meta name="description" content="Paste a product idea, get a scoped MVP plan: the core loop, what to cut from v1, three milestones, and the biggest risk.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Idea → MVP Spec">
+<meta property="og:description" content="Paste a product idea, get a scoped MVP plan in seconds.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B6B63'/%3E%3Cpath d='M9 21l6-11 3 5.5L20 13l3 8z' fill='%23F3F1EC'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --paper:#F5F3EE;
+    --card:#FFFFFF;
+    --ink:#15181C;
+    --ink-2:#454C55;
+    --muted:#7A828C;
+    --line:#DFDCD4;
+    --line-soft:#EBE8E1;
+    --accent:#0B6B63;
+    --accent-ink:#095A53;
+    --accent-soft:#DCEBE8;
+    --warn:#9A4A15;
+    --warn-soft:#F6E8DC;
+    --shadow:0 1px 2px rgba(21,24,28,.04), 0 12px 32px -16px rgba(21,24,28,.22);
+    --display:"Instrument Serif",Georgia,serif;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#12151A; --card:#181C22; --ink:#ECEAE4; --ink-2:#B6BCC4; --muted:#828A94;
+      --line:#2A3038; --line-soft:#222831; --accent:#5FBFAF; --accent-ink:#7FD3C4;
+      --accent-soft:#152A28; --warn:#D99A6B; --warn-soft:#2B2018;
+      --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px -16px rgba(0,0,0,.7);
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:60rem; margin:0 auto; padding:3rem 1.5rem 5rem}
+
+  header{margin-bottom:2.5rem}
+  .eyebrow{
+    font-size:.7rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent-ink); margin:0 0 .9rem;
+  }
+  h1{
+    font-family:var(--display); font-weight:400;
+    font-size:clamp(2.4rem,6vw,3.6rem); line-height:1.05; letter-spacing:-.015em;
+    margin:0 0 .7rem;
+  }
+  h1 em{font-style:italic; color:var(--accent-ink)}
+  .lede{font-size:1.05rem; color:var(--ink-2); margin:0; max-width:38rem}
+
+  .grid{display:grid; grid-template-columns:1fr; gap:1.25rem}
+  @media (min-width:56rem){ .grid{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)} }
+
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:6px;
+    padding:1.4rem; box-shadow:var(--shadow);
+  }
+  .panel h2{
+    font-family:var(--sans); font-size:.72rem; font-weight:600;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 1rem;
+  }
+
+  label{display:block; font-size:.82rem; font-weight:500; margin:0 0 .35rem; color:var(--ink-2)}
+  textarea,input[type=password],select{
+    width:100%; font-family:var(--sans); font-size:.95rem; color:var(--ink);
+    background:var(--paper); border:1px solid var(--line); border-radius:4px;
+    padding:.7rem .8rem; outline:none;
+  }
+  textarea{min-height:8.5rem; resize:vertical; line-height:1.6}
+  textarea:focus,input:focus,select:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+  .row{display:flex; gap:.75rem; margin-top:1rem}
+  .row>div{flex:1; min-width:0}
+
+  .hint{font-size:.76rem; color:var(--muted); margin:.45rem 0 0; line-height:1.5}
+  .hint strong{color:var(--ink-2); font-weight:500}
+
+  button.go{
+    width:100%; margin-top:1.2rem; padding:.8rem 1rem;
+    font-family:var(--sans); font-size:.95rem; font-weight:600; letter-spacing:.01em;
+    color:#fff; background:var(--accent); border:0; border-radius:4px; cursor:pointer;
+    transition:opacity .15s, transform .05s;
+  }
+  button.go:hover{opacity:.92}
+  button.go:active{transform:translateY(1px)}
+  button.go:disabled{opacity:.45; cursor:not-allowed}
+  button.go:focus-visible{outline:2px solid var(--accent-ink); outline-offset:2px}
+
+  .out{min-height:20rem}
+  .placeholder{
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    min-height:18rem; text-align:center; color:var(--muted); gap:.5rem;
+  }
+  .placeholder svg{opacity:.35}
+  .placeholder p{margin:0; font-size:.88rem; max-width:20rem}
+
+  .doc{font-size:.94rem}
+  .doc h3{
+    font-family:var(--sans); font-size:.7rem; font-weight:600;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--accent-ink);
+    margin:1.6rem 0 .5rem; padding-top:1.1rem; border-top:1px solid var(--line-soft);
+  }
+  .doc h3:first-child{margin-top:0; padding-top:0; border-top:0}
+  .doc p{margin:0 0 .7rem; color:var(--ink-2)}
+  .doc ul{margin:0 0 .7rem; padding-left:1.1rem; color:var(--ink-2)}
+  .doc li{margin:.25rem 0}
+  .doc strong{color:var(--ink); font-weight:600}
+  .cursor{
+    display:inline-block; width:.5em; height:1em; vertical-align:-.15em;
+    background:var(--accent); animation:blink 1s steps(2) infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .cursor{animation:none} }
+
+  .err{
+    background:var(--warn-soft); border-left:2px solid var(--warn); color:var(--warn);
+    padding:.7rem .9rem; border-radius:3px; font-size:.86rem; margin:0;
+  }
+  .bar{display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-top:1.2rem}
+  .bar button{
+    font-family:var(--sans); font-size:.78rem; font-weight:600; color:var(--accent-ink);
+    background:transparent; border:1px solid var(--accent-ink); border-radius:3px;
+    padding:.35rem .75rem; cursor:pointer;
+  }
+  .bar button:hover{background:var(--accent-soft)}
+  .meta{font-family:var(--mono); font-size:.72rem; color:var(--muted)}
+
+  footer{
+    margin-top:3.5rem; padding-top:1.3rem; border-top:1px solid var(--line);
+    font-size:.82rem; color:var(--muted); display:flex; flex-wrap:wrap; gap:.4rem 1.2rem;
+  }
+  footer a{color:var(--accent-ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Colin · AI Product Builder</p>
+    <h1>Idea → <em>MVP Spec</em></h1>
+    <p class="lede">
+      Paste a product idea. Get back the one loop worth building first, the features to cut
+      from v1, three milestones, and the risk most likely to sink it.
+    </p>
+  </header>
+
+  <div class="grid">
+
+    <section class="panel">
+      <h2>Your idea</h2>
+
+      <label for="idea">Describe it in a few sentences</label>
+      <textarea id="idea" placeholder="A tool that lets freelance designers send a client a link where the client can leave feedback directly on the design, without signing up."></textarea>
+
+      <div class="row">
+        <div>
+          <label for="provider">Model</label>
+          <select id="provider">
+            <option value="openai">OpenAI · GPT</option>
+            <option value="anthropic">Anthropic · Claude</option>
+          </select>
+        </div>
+        <div>
+          <label for="key">API key</label>
+          <input id="key" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <p class="hint">
+        <strong>Your key never leaves your browser.</strong> It is kept in localStorage on this
+        device and sent only to the provider you pick. No server sits in between — this page is
+        static.
+      </p>
+
+      <button class="go" id="go">Generate the spec</button>
+    </section>
+
+    <section class="panel">
+      <h2>The spec</h2>
+      <div class="out" id="out">
+        <div class="placeholder">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+            <path d="M4 19l6-11 3 5.5L15 11l5 8z"/><circle cx="18" cy="5" r="2"/>
+          </svg>
+          <p>The scoped plan will appear here.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <span>Built by Colin — I build AI-powered MVPs for founders.</span>
+    <a href="https://colinaibyte.github.io/doudou-maze/en/" target="_blank" rel="noopener">Another build →</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const ideaEl = $("idea"), keyEl = $("key"), provEl = $("provider"),
+        goEl = $("go"), outEl = $("out");
+
+  const KEY_STORE = "mvpspec.key.";
+
+  // 每家一把 key，切换 provider 时各记各的
+  const loadKey = () => { keyEl.value = localStorage.getItem(KEY_STORE + provEl.value) || ""; };
+  const saveKey = () => {
+    const v = keyEl.value.trim();
+    v ? localStorage.setItem(KEY_STORE + provEl.value, v)
+      : localStorage.removeItem(KEY_STORE + provEl.value);
+  };
+  provEl.addEventListener("change", loadKey);
+  keyEl.addEventListener("change", saveKey);
+  loadKey();
+
+  const SYSTEM = [
+    "You are a product lead who has shipped many small products.",
+    "Given a raw product idea, you scope the smallest version worth building.",
+    "You are decisive: you name ONE core loop and you cut hard.",
+    "",
+    "Answer in exactly this structure, using these headings verbatim:",
+    "",
+    "## The core loop",
+    "One paragraph. The single sequence a user repeats that creates the value.",
+    "",
+    "## Cut from v1",
+    "4-6 bullets. Things people will ask for that must wait. One short reason each.",
+    "",
+    "## Three milestones",
+    "3 bullets, each starting with a day range in bold, e.g. **Days 1-3** — what ships.",
+    "",
+    "## Biggest risk",
+    "One paragraph naming the assumption most likely to be wrong, and the cheapest way to test it this week.",
+    "",
+    "Be concrete and specific to the idea given. No preamble, no summary at the end."
+  ].join("\n");
+
+  // --- 极简 markdown 渲染：只认标题、列表、粗体 ---
+  const esc = s => s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  function render(md, streaming) {
+    const lines = md.split("\n");
+    let html = "", inList = false;
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      if (/^#{2,3}\s+/.test(line)) {
+        if (inList) { html += "</ul>"; inList = false; }
+        html += "<h3>" + inline(line.replace(/^#{2,3}\s+/, "")) + "</h3>";
+      } else if (/^[-*]\s+/.test(line)) {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += "<li>" + inline(line.replace(/^[-*]\s+/, "")) + "</li>";
+      } else if (line === "") {
+        if (inList) { html += "</ul>"; inList = false; }
+      } else {
+        if (inList) { html += "</ul>"; inList = false; }
+        html += "<p>" + inline(line) + "</p>";
+      }
+    }
+    if (inList) html += "</ul>";
+    if (streaming) html += '<span class="cursor"></span>';
+    return '<div class="doc">' + html + "</div>";
+  }
+
+  const fail = msg => { outEl.innerHTML = '<p class="err">' + esc(msg) + "</p>"; };
+
+  function finishBar(text, model, ms) {
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    const btn = document.createElement("button");
+    btn.textContent = "Copy spec";
+    btn.onclick = async () => {
+      try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+      catch { btn.textContent = "Select and copy"; }
+      setTimeout(() => { btn.textContent = "Copy spec"; }, 1800);
+    };
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = model + " · " + (ms / 1000).toFixed(1) + "s";
+    bar.append(btn, meta);
+    outEl.append(bar);
+  }
+
+  // --- 两家的 SSE 格式不同，但都是 data: 行，差别在 payload 结构 ---
+  function deltaFrom(provider, payload) {
+    if (provider === "openai") return payload.choices?.[0]?.delta?.content || "";
+    if (payload.type === "content_block_delta") return payload.delta?.text || "";
+    return "";
+  }
+
+  function requestFor(provider, key, idea) {
+    if (provider === "openai") {
+      return {
+        url: "https://api.openai.com/v1/chat/completions",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+        body: {
+          model: "gpt-4o", stream: true, max_completion_tokens: 1200,
+          messages: [{ role: "system", content: SYSTEM }, { role: "user", content: idea }]
+        },
+        label: "gpt-4o"
+      };
+    }
+    return {
+      url: "https://api.anthropic.com/v1/messages",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        // 浏览器直连需要这个头，否则 Anthropic 会拒
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: {
+        model: "claude-sonnet-4-5", stream: true, max_tokens: 1200,
+        system: SYSTEM, messages: [{ role: "user", content: idea }]
+      },
+      label: "claude-sonnet-4-5"
+    };
+  }
+
+  async function generate() {
+    const idea = ideaEl.value.trim();
+    const key = keyEl.value.trim();
+    const provider = provEl.value;
+
+    if (idea.length < 20) return fail("Describe the idea in a bit more detail — a sentence or two at minimum.");
+    if (!key) return fail("Add an API key for " + (provider === "openai" ? "OpenAI" : "Anthropic") + ". It stays in this browser.");
+
+    saveKey();
+    goEl.disabled = true;
+    goEl.textContent = "Thinking…";
+    outEl.innerHTML = '<div class="doc"><span class="cursor"></span></div>';
+
+    const req = requestFor(provider, key, idea);
+    const started = performance.now();
+    let text = "";
+
+    try {
+      const res = await fetch(req.url, {
+        method: "POST", headers: req.headers, body: JSON.stringify(req.body)
+      });
+
+      if (!res.ok) {
+        let detail = "";
+        try { detail = (await res.json())?.error?.message || ""; } catch {}
+        throw new Error("HTTP " + res.status + (detail ? " — " + detail : ""));
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split("\n");
+        buffer = parts.pop();               // 最后一段可能被截断，留到下一轮
+        for (const line of parts) {
+          if (!line.startsWith("data:")) continue;
+          const data = line.slice(5).trim();
+          if (!data || data === "[DONE]") continue;
+          try {
+            text += deltaFrom(provider, JSON.parse(data));
+          } catch { /* 半截 JSON，忽略 */ }
+        }
+        outEl.innerHTML = render(text, true);
+      }
+
+      if (!text.trim()) throw new Error("The model returned nothing. Try again.");
+      outEl.innerHTML = render(text, false);
+      finishBar(text, req.label, performance.now() - started);
+
+    } catch (e) {
+      const m = String(e.message || e);
+      fail(
+        /Failed to fetch/i.test(m)
+          ? "Could not reach the API. Check your connection, or whether the key allows browser requests."
+          : m
+      );
+    } finally {
+      goEl.disabled = false;
+      goEl.textContent = "Generate the spec";
+    }
+  }
+
+  goEl.addEventListener("click", generate);
+  ideaEl.addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") generate();
+  });
+})();
+</script>
+</body>
+</html>
