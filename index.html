@@ -172,6 +172,7 @@
             <option value="gemini">Google · Gemini (free key)</option>
             <option value="openai">OpenAI · GPT</option>
             <option value="anthropic">Anthropic · Claude</option>
+            <option value="deepseek">DeepSeek</option>
           </select>
         </div>
         <div>
@@ -228,7 +229,7 @@
     v ? localStorage.setItem(KEY_STORE + provEl.value, v)
       : localStorage.removeItem(KEY_STORE + provEl.value);
   };
-  const PLACEHOLDER = { gemini: "AIza…", openai: "sk-…", anthropic: "sk-ant-…" };
+  const PLACEHOLDER = { gemini: "AIza…", openai: "sk-…", anthropic: "sk-ant-…", deepseek: "sk-…" };
   const syncPlaceholder = () => { keyEl.placeholder = PLACEHOLDER[provEl.value] || "API key"; };
 
   provEl.addEventListener("change", () => { loadKey(); syncPlaceholder(); });
@@ -307,10 +308,42 @@
   // --- 两家的 SSE 格式不同，但都是 data: 行，差别在 payload 结构 ---
   function deltaFrom(provider, payload) {
     // Gemini 的 OpenAI 兼容端点返回同样形状的 chunk，共用一条分支
-    if (provider === "openai" || provider === "gemini")
+    // OpenAI 兼容的三家共用一条分支
+    if (provider !== "anthropic")
       return payload.choices?.[0]?.delta?.content || "";
     if (payload.type === "content_block_delta") return payload.delta?.text || "";
     return "";
+  }
+
+  // Gemini 的型号更新很快，写死一个迟早 404。
+  // 直接问这把 key 能用哪些，挑一个 flash（便宜、够快、免费额度友好）。
+  let geminiModel = null;
+  async function resolveGeminiModel(key) {
+    if (geminiModel) return geminiModel;
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(key)
+    );
+    if (!res.ok) {
+      const raw = await res.text().catch(() => "");
+      throw new Error("Could not list models — HTTP " + res.status + " " + raw.slice(0, 200));
+    }
+    const all = (await res.json()).models || [];
+    const usable = all
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => String(m.name).replace(/^models\//, ""))
+      .filter(n => n.startsWith("gemini"));
+
+    if (!usable.length) throw new Error("This key has no Gemini models available for generation.");
+
+    // flash 优先，其次版本号大的
+    const score = n =>
+      (/flash/.test(n) ? 100 : 0) +
+      (/lite/.test(n) ? -10 : 0) +
+      (/preview|exp/.test(n) ? -30 : 0) +
+      (parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1]) || 0);
+
+    geminiModel = usable.sort((a, b) => score(b) - score(a))[0];
+    return geminiModel;
   }
 
   function requestFor(provider, key, idea) {
@@ -319,10 +352,21 @@
         url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
         body: {
-          model: "gemini-2.0-flash", stream: true, max_tokens: 1200,
+          model: geminiModel, stream: true, max_tokens: 1200,
           messages: [{ role: "system", content: SYSTEM }, { role: "user", content: idea }]
         },
-        label: "gemini-2.0-flash"
+        label: geminiModel
+      };
+    }
+    if (provider === "deepseek") {
+      return {
+        url: "https://api.deepseek.com/chat/completions",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+        body: {
+          model: "deepseek-chat", stream: true, max_tokens: 1200,
+          messages: [{ role: "system", content: SYSTEM }, { role: "user", content: idea }]
+        },
+        label: "deepseek-chat"
       };
     }
     if (provider === "openai") {
@@ -359,7 +403,7 @@
     const provider = provEl.value;
 
     if (idea.length < 20) return fail("Describe the idea in a bit more detail — a sentence or two at minimum.");
-    const NAMES = { gemini: "Google AI Studio", openai: "OpenAI", anthropic: "Anthropic" };
+    const NAMES = { gemini: "Google AI Studio", openai: "OpenAI", anthropic: "Anthropic", deepseek: "DeepSeek" };
     if (!key) return fail("Add an API key for " + NAMES[provider] + ". It stays in this browser.");
 
     saveKey();
@@ -367,19 +411,26 @@
     goEl.textContent = "Thinking…";
     outEl.innerHTML = '<div class="doc"><span class="cursor"></span></div>';
 
-    const req = requestFor(provider, key, idea);
     const started = performance.now();
     let text = "";
 
     try {
+      if (provider === "gemini") {
+        goEl.textContent = "Finding a model…";
+        await resolveGeminiModel(key);
+        goEl.textContent = "Thinking…";
+      }
+      const req = requestFor(provider, key, idea);
       const res = await fetch(req.url, {
         method: "POST", headers: req.headers, body: JSON.stringify(req.body)
       });
 
       if (!res.ok) {
-        let detail = "";
-        try { detail = (await res.json())?.error?.message || ""; } catch {}
-        throw new Error("HTTP " + res.status + (detail ? " — " + detail : ""));
+        // 一定要把服务端说的话带出来。只报 "HTTP 404" 等于什么都没说。
+        const raw = await res.text().catch(() => "");
+        let detail = raw;
+        try { detail = JSON.parse(raw)?.error?.message || raw; } catch {}
+        throw new Error("HTTP " + res.status + (detail ? " — " + detail.slice(0, 300) : ""));
       }
 
       const reader = res.body.getReader();
